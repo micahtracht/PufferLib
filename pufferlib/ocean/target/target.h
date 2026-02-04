@@ -65,22 +65,22 @@ void init(Target* env) {
 
 void update_goals(Target* env) {
     for (int a=0; a<env->num_agents; a++) {
-        Agent* agent = &env->agents[a];
+        Agent* agent = &env->agents[a]; // for each agent, get their address
         for (int g=0; g<env->num_goals; g++) {
-            Goal* goal = &env->goals[g];
-            float dx = (goal->x - agent->x);
+            Goal* goal = &env->goals[g]; // for each goal, get the address
+            float dx = (goal->x - agent->x); // for each agent and goa, get the differences in x and y (line below does y)
             float dy = (goal->y - agent->y);
             float dist = sqrt(dx*dx + dy*dy);
-            if (dist > 32) {
+            if (dist > 32) { // if the goal is more than 32 away from the agent, we don't need to reset/give reward bc the agent hasn't reached it yet.
                 continue;
             }
-            goal->x = rand() % env->width;
+            goal->x = rand() % env->width; // agent has reached the goal, so we need to reset x and y
             goal->y = rand() % env->height;
-            env->rewards[a] = 1.0f;
+            env->rewards[a] = 1.0f; // agent reached goal, so we give reward and increment perf, score, and episode len
             env->log.perf += 1.0f;
             env->log.score += 1.0f;
             env->log.episode_length += agent->ticks_since_reward;
-            agent->ticks_since_reward = 0;
+            agent->ticks_since_reward = 0; // reset ticks since reward bc the agent just earned reward
             env->log.episode_return += 1.0f;
             env->log.n++;
         }
@@ -97,18 +97,18 @@ void compute_observations(Target* env) {
     for (int a=0; a<env->num_agents; a++) {
         Agent* agent = &env->agents[a];
         for (int g=0; g<env->num_goals; g++) {
-            Goal* goal = &env->goals[g];
-            env->observations[obs_idx++] = (goal->x - agent->x)/env->width;
+            Goal* goal = &env->goals[g]; // for each agent and goal, get the addresses so we can process them (same structure as before)
+            env->observations[obs_idx++] = (goal->x - agent->x)/env->width; // get the (normalized) x and y distances and write the values to the agent's observations.
             env->observations[obs_idx++] = (goal->y - agent->y)/env->height;
         }
         for (int a=0; a<env->num_agents; a++) {
             Agent* other = &env->agents[a];
-            env->observations[obs_idx++] = (other->x - agent->x)/env->width;
+            env->observations[obs_idx++] = (other->x - agent->x)/env->width; // for every other agent, also get the normalized x and y distances and write the values to the agent's observations
             env->observations[obs_idx++] = (other->y - agent->y)/env->height;
         }
-        env->observations[obs_idx++] = agent->heading/(2*PI);
-        env->observations[obs_idx++] = env->rewards[a];
-        env->observations[obs_idx++] = agent->x/env->width;
+        env->observations[obs_idx++] = agent->heading/(2*PI); // normalize heading and add that as observation
+        env->observations[obs_idx++] = env->rewards[a]; // observe reeward
+        env->observations[obs_idx++] = agent->x/env->width; // observe current agent x and y pos (normalized)
         env->observations[obs_idx++] = agent->y/env->height;
     }
 }
@@ -116,18 +116,18 @@ void compute_observations(Target* env) {
 // Required function
 void c_reset(Target* env) {
     for (int i=0; i<env->num_agents; i++) {
-        env->agents[i].x = rand() % env->width;
+        env->agents[i].x = rand() % env->width; // set agent to random x and y
         env->agents[i].y = rand() % env->height;
-        env->agents[i].ticks_since_reward = 0;
+        env->agents[i].ticks_since_reward = 0; // start ticks since reward at 0
     }
     for (int i=0; i<env->num_goals; i++) {
-        env->goals[i].x = rand() % env->width;
+        env->goals[i].x = rand() % env->width; // set goals to random x and y
         env->goals[i].y = rand() % env->height;
     }
-    compute_observations(env);
+    compute_observations(env); // compute initial observations
 }
 
-float clip(float val, float min, float max) {
+float clip(float val, float min, float max) { // clip val to within [min, max]
     if (val < min) {
         return min;
     } else if (val > max) {
@@ -138,10 +138,10 @@ float clip(float val, float min, float max) {
 
 // Required function
 void c_step(Target* env) {
-    for (int i=0; i<env->num_agents; i++) {
+    for (int i=0; i<env->num_agents; i++) { // for each agent
         env->rewards[i] = 0;
         Agent* agent = &env->agents[i];
-        agent->ticks_since_reward += 1;
+        agent->ticks_since_reward += 1; // incr this 
 
         agent->heading += ((float)env->actions[2*i] - 4.0f)/12.0f;
         agent->heading = clip(agent->heading, 0, 2*PI);

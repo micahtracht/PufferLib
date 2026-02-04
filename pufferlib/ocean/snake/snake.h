@@ -152,8 +152,8 @@ void spawn_snake(CSnake* env, int snake_id) {
     env->snake_lengths[snake_id] = 1;
     env->snake_ptr[snake_id] = 0;
     env->snake_lifetimes[snake_id] = 0;
-    env->grid[grid_idx] = env->snake_colors[snake_id];
-    env->snake_logs[snake_id] = (Log){0};
+    env->grid[grid_idx] = env->snake_colors[snake_id]; // for rendering
+    env->snake_logs[snake_id] = (Log){0}; // zero the entirety of the snake's log
 }
 
 void spawn_food(CSnake* env) {
@@ -180,7 +180,7 @@ void c_reset(CSnake* env) {
         for (int c = 0; c < env->width; c++)
             env->grid[r*env->width + c] = WALL;
     }
-    for (int r = env->height - env->vision; r < env->height; r++) {
+    for (int r = env->height - env->vision; r < env->height; r++) { // set area around border to walls so snakes never observe undefined/random memory
         for (int c = 0; c < env->width; c++)
             env->grid[r*env->width + c] = WALL;
     }
@@ -195,10 +195,10 @@ void c_reset(CSnake* env) {
     for (int i = 0; i < env->food; i++)
         spawn_food(env);
 
-    compute_observations(env);
+    compute_observations(env); // always last line
 }
 
-void step_snake(CSnake* env, int i) {
+void step_snake(CSnake* env, int i) { // step per snake would have been a better way to code shooter!
     env->snake_logs[i].episode_length += 1;
     int atn = env->actions[i];
     int dr = 0;
@@ -222,7 +222,7 @@ void step_snake(CSnake* env, int i) {
         prev_head_offset += 2*env->max_snake_length;
     int prev_r = env->snake[prev_head_offset];
     int prev_c = env->snake[prev_head_offset + 1];
-    if (prev_r == next_r && prev_c == next_c) {
+    if (prev_r == next_r && prev_c == next_c) { // flip it if would move back to neck
         next_r = env->snake[head_offset] - dr;
         next_c = env->snake[head_offset + 1] - dc;
     }
